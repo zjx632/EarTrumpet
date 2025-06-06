@@ -54,29 +54,7 @@ public class IconHelper
         try
         {
             SndVolSSO.IconId iconId = (SndVolSSO.IconId)iconOrdinal;
-            string iconChar = "";
             string fontFamilyName = "Segoe Fluent Icons";
-
-            switch (iconId)
-            {
-                case SndVolSSO.IconId.Muted:
-                    iconChar = "\ue74f";
-                    break;
-                case SndVolSSO.IconId.SpeakerZeroBars:
-                    iconChar = "\ue992";
-                    break;
-                case SndVolSSO.IconId.SpeakerOneBar:
-                    iconChar = "\ue993";
-                    break;
-                case SndVolSSO.IconId.SpeakerTwoBars:
-                    iconChar = "\ue994";
-                    break;
-                case SndVolSSO.IconId.SpeakerThreeBars:
-                    iconChar = "\ue995";
-                    break;
-                case SndVolSSO.IconId.NoDevice:
-                    break;
-            }
 
             using var bmp = new Bitmap(cx, cy, PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(bmp))
@@ -91,16 +69,88 @@ public class IconHelper
                     GraphicsUnit.Pixel
                 );
 
-                var brush = Brushes.White;
+                var backBrush = Brushes.Gray;
+                var foreBrush = Brushes.White;
                 g.Clear(Color.Transparent);
 
                 var format = new StringFormat
                 {
                     Alignment = StringAlignment.Center,
                     LineAlignment = StringAlignment.Near,
+                    FormatFlags = StringFormatFlags.NoClip,
                 };
 
-                g.DrawString(iconChar, font, brush, new RectangleF(0, 0, cx, cy), format);
+                switch (iconId)
+                {
+                    case SndVolSSO.IconId.Muted:
+                        g.DrawString(
+                            "\ue74f",
+                            font,
+                            foreBrush,
+                            new RectangleF(0, 0, cx, cy),
+                            format
+                        );
+                        break;
+                    case SndVolSSO.IconId.SpeakerZeroBars:
+                        g.DrawString(
+                            "\ue995",
+                            font,
+                            backBrush,
+                            new RectangleF(0, 0, cx, cy),
+                            format
+                        );
+                        g.DrawString(
+                            "\ue992",
+                            font,
+                            foreBrush,
+                            new RectangleF(0, 0, cx, cy),
+                            format
+                        );
+                        break;
+                    case SndVolSSO.IconId.SpeakerOneBar:
+                        g.DrawString(
+                            "\ue995",
+                            font,
+                            backBrush,
+                            new RectangleF(0, 0, cx, cy),
+                            format
+                        );
+                        g.DrawString(
+                            "\ue993",
+                            font,
+                            foreBrush,
+                            new RectangleF(0, 0, cx, cy),
+                            format
+                        );
+                        break;
+                    case SndVolSSO.IconId.SpeakerTwoBars:
+                        g.DrawString(
+                            "\ue995",
+                            font,
+                            backBrush,
+                            new RectangleF(0, 0, cx, cy),
+                            format
+                        );
+                        g.DrawString(
+                            "\ue994",
+                            font,
+                            foreBrush,
+                            new RectangleF(0, 0, cx, cy),
+                            format
+                        );
+                        break;
+                    case SndVolSSO.IconId.SpeakerThreeBars:
+                        g.DrawString(
+                            "\ue995",
+                            font,
+                            foreBrush,
+                            new RectangleF(0, 0, cx, cy),
+                            format
+                        );
+                        break;
+                    case SndVolSSO.IconId.NoDevice:
+                        break;
+                }
             }
 
             HICON hIcon = (HICON)bmp.GetHicon();
