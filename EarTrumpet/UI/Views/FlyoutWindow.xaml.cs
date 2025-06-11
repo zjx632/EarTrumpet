@@ -1,10 +1,10 @@
-﻿using EarTrumpet.Extensions;
+﻿using System;
+using System.Windows;
+using EarTrumpet.Extensions;
 using EarTrumpet.Interop;
 using EarTrumpet.Interop.Helpers;
 using EarTrumpet.UI.Helpers;
 using EarTrumpet.UI.ViewModels;
-using System;
-using System.Windows;
 using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace EarTrumpet.UI.Views;
@@ -27,7 +27,8 @@ public partial class FlyoutWindow
             this.Cloak();
             this.EnableRoundedCornersIfApplicable();
         };
-        Themes.Manager.Current.ThemeChanged += () => EnableAcrylicIfApplicable(WindowsTaskbar.Current);
+        Themes.Manager.Current.ThemeChanged += () =>
+            EnableAcrylicIfApplicable(WindowsTaskbar.Current);
     }
 
     public void Initialize()
@@ -47,6 +48,7 @@ public partial class FlyoutWindow
             case FlyoutViewState.Opening:
                 var taskbar = WindowsTaskbar.Current;
 
+                this.ForceDpiAwarenessRefresh();
                 Show();
                 EnableAcrylicIfApplicable(taskbar);
                 PositionWindowRelativeToTaskbar(taskbar);
@@ -57,34 +59,41 @@ public partial class FlyoutWindow
                 // Prevent showing stale adnorners.
                 this.WaitForKeyboardVisuals(() =>
                 {
-                    WindowAnimationLibrary.BeginFlyoutEntranceAnimation(this, taskbar, () =>
-                    {
-                        _viewModel.ChangeState(FlyoutViewState.Open);
-                    });
+                    WindowAnimationLibrary.BeginFlyoutEntranceAnimation(
+                        this,
+                        taskbar,
+                        () =>
+                        {
+                            _viewModel.ChangeState(FlyoutViewState.Open);
+                        }
+                    );
                 });
                 break;
 
             case FlyoutViewState.Closing_Stage1:
                 DevicesList.FindVisualChild<DeviceView>()?.FocusAndRemoveFocusVisual();
-            
+
                 if (_viewModel.IsExpandingOrCollapsing)
                 {
-                    WindowAnimationLibrary.BeginFlyoutExitanimation(this, () =>
-                    {
-                        this.Cloak();
-                        AccentPolicyLibrary.DisableAcrylic(this);
-            
-                        // Go directly to ViewState.Hidden to avoid the stage 2 hide delay (debounce for tray clicks),
-                        // we want to show again immediately.
-                        _viewModel.ChangeState(FlyoutViewState.Hidden);
-                    });
+                    WindowAnimationLibrary.BeginFlyoutExitanimation(
+                        this,
+                        () =>
+                        {
+                            this.Cloak();
+                            AccentPolicyLibrary.DisableAcrylic(this);
+
+                            // Go directly to ViewState.Hidden to avoid the stage 2 hide delay (debounce for tray clicks),
+                            // we want to show again immediately.
+                            _viewModel.ChangeState(FlyoutViewState.Hidden);
+                        }
+                    );
                 }
                 else
                 {
                     // No animation for normal exit.
                     this.Cloak();
                     AccentPolicyLibrary.DisableAcrylic(this);
-            
+
                     // Prevent de-queueing partially on show and showing stale adnorners.
                     this.WaitForKeyboardVisuals(() =>
                     {
@@ -167,13 +176,14 @@ public partial class FlyoutWindow
 
         double yOffset = 0;
         double xOffset = 0;
-        if(Environment.OSVersion.IsAtLeast(OSVersions.Windows11))
+        if (Environment.OSVersion.IsAtLeast(OSVersions.Windows11))
         {
             xOffset += 12 * this.DpiX();
             yOffset += 12 * this.DpiY();
         }
 
-        var workingAreaHeight = Math.Abs(adjustedWorkingAreaTop - adjustedWorkingAreaBottom) - (yOffset * 2);
+        var workingAreaHeight =
+            Math.Abs(adjustedWorkingAreaTop - adjustedWorkingAreaBottom) - (yOffset * 2);
         if (flyoutHeight > workingAreaHeight)
         {
             flyoutHeight = workingAreaHeight;
@@ -193,11 +203,17 @@ public partial class FlyoutWindow
                 break;
             case WindowsTaskbar.Position.Top:
                 top = adjustedWorkingAreaTop + xOffset;
-                left = FlowDirection == FlowDirection.LeftToRight ? adjustedWorkingAreaRight - flyoutWidth - xOffset : adjustedWorkingAreaLeft + xOffset;
+                left =
+                    FlowDirection == FlowDirection.LeftToRight
+                        ? adjustedWorkingAreaRight - flyoutWidth - xOffset
+                        : adjustedWorkingAreaLeft + xOffset;
                 break;
             case WindowsTaskbar.Position.Bottom:
                 top = adjustedWorkingAreaBottom - flyoutHeight - yOffset;
-                left = FlowDirection == FlowDirection.LeftToRight ? adjustedWorkingAreaRight - flyoutWidth - xOffset : adjustedWorkingAreaLeft + xOffset;
+                left =
+                    FlowDirection == FlowDirection.LeftToRight
+                        ? adjustedWorkingAreaRight - flyoutWidth - xOffset
+                        : adjustedWorkingAreaLeft + xOffset;
                 break;
         }
         this.SetWindowPos(top, left, flyoutHeight, flyoutWidth);
@@ -209,7 +225,11 @@ public partial class FlyoutWindow
         // Note: Enable when in Opening as well as Open in case we get a theme change during a show cycle.
         if (_viewModel.State == FlyoutViewState.Opening || _viewModel.State == FlyoutViewState.Open)
         {
-            AccentPolicyLibrary.EnableAcrylic(this, Themes.Manager.ResolveRef(this, "AcrylicColor_Flyout"), GetAccentFlags(taskbar));
+            AccentPolicyLibrary.EnableAcrylic(
+                this,
+                Themes.Manager.ResolveRef(this, "AcrylicColor_Flyout"),
+                GetAccentFlags(taskbar)
+            );
         }
         else
         {
@@ -227,10 +247,14 @@ public partial class FlyoutWindow
 
         return taskbar.Location switch
         {
-            WindowsTaskbar.Position.Left => User32.AccentFlags.DrawRightBorder | User32.AccentFlags.DrawTopBorder,
-            WindowsTaskbar.Position.Right => User32.AccentFlags.DrawLeftBorder | User32.AccentFlags.DrawTopBorder,
-            WindowsTaskbar.Position.Top => User32.AccentFlags.DrawLeftBorder | User32.AccentFlags.DrawBottomBorder,
-            WindowsTaskbar.Position.Bottom => User32.AccentFlags.DrawTopBorder | User32.AccentFlags.DrawLeftBorder,
+            WindowsTaskbar.Position.Left => User32.AccentFlags.DrawRightBorder
+                | User32.AccentFlags.DrawTopBorder,
+            WindowsTaskbar.Position.Right => User32.AccentFlags.DrawLeftBorder
+                | User32.AccentFlags.DrawTopBorder,
+            WindowsTaskbar.Position.Top => User32.AccentFlags.DrawLeftBorder
+                | User32.AccentFlags.DrawBottomBorder,
+            WindowsTaskbar.Position.Bottom => User32.AccentFlags.DrawTopBorder
+                | User32.AccentFlags.DrawLeftBorder,
             _ => User32.AccentFlags.None,
         };
     }

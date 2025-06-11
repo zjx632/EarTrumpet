@@ -12,11 +12,25 @@ namespace EarTrumpet.Extensions;
 
 public static class WindowExtensions
 {
-    public static void SetWindowPos(this Window window, double top, double left, double height, double width)
+    public static void SetWindowPos(
+        this Window window,
+        double top,
+        double left,
+        double height,
+        double width
+    )
     {
         unsafe
         {
-            PInvoke.SetWindowPos(new HWND(window.GetHandle().ToPointer()), (HWND)null, (int)left, (int)top, (int)width, (int)height, SET_WINDOW_POS_FLAGS.SWP_NOZORDER | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE);
+            PInvoke.SetWindowPos(
+                new HWND(window.GetHandle().ToPointer()),
+                (HWND)null,
+                (int)left,
+                (int)top,
+                (int)width,
+                (int)height,
+                SET_WINDOW_POS_FLAGS.SWP_NOZORDER | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE
+            );
         }
     }
 
@@ -32,7 +46,12 @@ public static class WindowExtensions
         var attributeValue = hide ? 1 : 0;
         unsafe
         {
-            _ = PInvoke.DwmSetWindowAttribute(new HWND(window.GetHandle().ToPointer()), DWMWINDOWATTRIBUTE.DWMWA_CLOAK, &attributeValue, (uint)Marshal.SizeOf(attributeValue));
+            _ = PInvoke.DwmSetWindowAttribute(
+                new HWND(window.GetHandle().ToPointer()),
+                DWMWINDOWATTRIBUTE.DWMWA_CLOAK,
+                &attributeValue,
+                (uint)Marshal.SizeOf(attributeValue)
+            );
         }
     }
 
@@ -43,7 +62,12 @@ public static class WindowExtensions
             var attributeValue = (int)DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND;
             unsafe
             {
-                _ = PInvoke.DwmSetWindowAttribute(new HWND(window.GetHandle().ToPointer()), DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE, &attributeValue, (uint)Marshal.SizeOf(attributeValue));
+                _ = PInvoke.DwmSetWindowAttribute(
+                    new HWND(window.GetHandle().ToPointer()),
+                    DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE,
+                    &attributeValue,
+                    (uint)Marshal.SizeOf(attributeValue)
+                );
             }
         }
     }
@@ -52,14 +76,23 @@ public static class WindowExtensions
     {
         unsafe
         {
-            var currentStyle = User32.GetWindowLong(new HWND(window.GetHandle().ToPointer()), WINDOW_LONG_PTR_INDEX.GWL_STYLE);
+            var currentStyle = User32.GetWindowLong(
+                new HWND(window.GetHandle().ToPointer()),
+                WINDOW_LONG_PTR_INDEX.GWL_STYLE
+            );
             if (currentStyle == 0)
             {
-                Trace.WriteLine($"WindowExtensions RemoveWindowStyle Failed: ({Marshal.GetLastWin32Error()})");
+                Trace.WriteLine(
+                    $"WindowExtensions RemoveWindowStyle Failed: ({Marshal.GetLastWin32Error()})"
+                );
                 return;
             }
 
-            _ = User32.SetWindowLong(new HWND(window.GetHandle().ToPointer()), WINDOW_LONG_PTR_INDEX.GWL_STYLE, (int)currentStyle & ~(int)styleToRemove);
+            _ = User32.SetWindowLong(
+                new HWND(window.GetHandle().ToPointer()),
+                WINDOW_LONG_PTR_INDEX.GWL_STYLE,
+                (int)currentStyle & ~(int)styleToRemove
+            );
         }
     }
 
@@ -67,17 +100,28 @@ public static class WindowExtensions
     {
         unsafe
         {
-            var currentExStyle = User32.GetWindowLong(new HWND(window.GetHandle().ToPointer()), WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
+            var currentExStyle = User32.GetWindowLong(
+                new HWND(window.GetHandle().ToPointer()),
+                WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE
+            );
             if (currentExStyle == 0)
             {
-                Trace.WriteLine($"WindowExtensions ApplyExtendedWindowStyle Failed: ({Marshal.GetLastWin32Error()})");
+                Trace.WriteLine(
+                    $"WindowExtensions ApplyExtendedWindowStyle Failed: ({Marshal.GetLastWin32Error()})"
+                );
                 return;
             }
 
-            var oldExStyle = User32.SetWindowLong(new HWND(window.GetHandle().ToPointer()), WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, (int)currentExStyle | (int)newExStyle);
+            var oldExStyle = User32.SetWindowLong(
+                new HWND(window.GetHandle().ToPointer()),
+                WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE,
+                (int)currentExStyle | (int)newExStyle
+            );
             if (oldExStyle != currentExStyle)
             {
-                Trace.WriteLine($"WindowExtensions ApplyExtendedWindowStyle Unexpected: ({oldExStyle} vs. {currentExStyle})");
+                Trace.WriteLine(
+                    $"WindowExtensions ApplyExtendedWindowStyle Unexpected: ({oldExStyle} vs. {currentExStyle})"
+                );
                 return;
             }
         }
@@ -86,5 +130,27 @@ public static class WindowExtensions
     public static IntPtr GetHandle(this Window window)
     {
         return new WindowInteropHelper(window).Handle;
+    }
+
+    public static void ForceDpiAwarenessRefresh(this Window window)
+    {
+        var tempWindow = new Window
+        {
+            Width = 0,
+            Height = 0,
+            ShowInTaskbar = false,
+        };
+
+        try
+        {
+            tempWindow.Show();
+            window.Owner = tempWindow;
+            window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Render);
+            window.Owner = null;
+        }
+        finally
+        {
+            tempWindow.Close();
+        }
     }
 }
